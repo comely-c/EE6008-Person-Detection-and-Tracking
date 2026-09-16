@@ -15,9 +15,9 @@ dataset:
     root: "/projects/_hdd/EE6008cca9/datasets/MOT20"
     split: "train"
 
-  # Max number of frames to process per sequence.
-  # -1 = process all frames
-  max_frames: 100
+# Max number of frames to process per sequence.
+# -1 = process all frames
+max_frames: 100
 
 models:
 

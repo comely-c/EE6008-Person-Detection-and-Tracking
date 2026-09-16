@@ -1,80 +1,138 @@
-"""
-Step 3 sanity check: run Grounding DINO alone on a single frame and
-save a visualization, without SAM 3.1, Qwen3-VL, or tracking.
-
-Run:
-    python scripts/run_detection.py
-
-Output:
-    outputs/dino_test.jpg
-"""
-
-import sys
-
-sys.path.append(".")
-
+import os
 import cv2
-import yaml
+import torch
 
-from src.datasets.mot import MOTDataset
-from src.models.grounding_dino import GroundingDINOModel
-from src.utils.visualization import draw_detections
+from groundingdino.util.inference import load_model, load_image, predict, annotate
 
 
-def main():
-    with open("configs/config.yaml", "r", encoding="utf-8") as f:
-        config = yaml.safe_load(f)
+# =========================
+# Paths
+# =========================
+CONFIG_PATH = (
+    "third_party/GroundingDINO/"
+    "groundingdino/config/GroundingDINO_SwinT_OGC.py"
+)
 
-    device = f"cuda:{config['device']['gpu_id']}"
+CHECKPOINT_PATH = "weights/groundingdino_swint_ogc.pth"
 
-    dino_config = config["models"]["grounding_dino"]
+IMAGE_PATH = (
+    "/projects/_hdd/EE6008cca9/datasets/"
+    "MOT17/train/MOT17-02-DPM/img1/000001.jpg"
+)
 
-    dino = GroundingDINOModel(
-        config_path=dino_config["config"],
-        checkpoint_path=dino_config["checkpoint"],
-        device=device,
-        box_threshold=dino_config["box_threshold"],
-        text_threshold=dino_config["text_threshold"],
+OUTPUT_PATH = "outputs/groundingdino_mot17_000001.jpg"
+
+
+# =========================
+# Check GPU
+# =========================
+print("=" * 60)
+print("Grounding DINO single-image test")
+print("=" * 60)
+
+print("PyTorch:", torch.__version__)
+print("CUDA available:", torch.cuda.is_available())
+
+if torch.cuda.is_available():
+    print("GPU:", torch.cuda.get_device_name(0))
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+
+# =========================
+# Check image
+# =========================
+if not os.path.isfile(IMAGE_PATH):
+    raise FileNotFoundError(
+        f"Image not found:\n{IMAGE_PATH}"
     )
 
-    dino.load()
+print("\nImage:")
+print(IMAGE_PATH)
 
-    dataset = MOTDataset(
-        config["dataset"]["mot17"]["root"],
-        config["dataset"]["mot17"]["split"],
+
+# =========================
+# Load Grounding DINO
+# =========================
+print("\nLoading Grounding DINO...")
+
+model = load_model(
+    CONFIG_PATH,
+    CHECKPOINT_PATH,
+    device=device,
+)
+
+print("Grounding DINO loaded successfully.")
+
+
+# =========================
+# Load image
+# =========================
+image_source, image = load_image(IMAGE_PATH)
+
+print("Image loaded.")
+print("Original image shape:", image_source.shape)
+
+
+# =========================
+# Detection
+# =========================
+print("\nRunning detection...")
+
+boxes, logits, phrases = predict(
+    model=model,
+    image=image,
+    caption="person.",
+    box_threshold=0.35,
+    text_threshold=0.25,
+    device=device,
+)
+
+
+# =========================
+# Print results
+# =========================
+print("\nDetection results")
+print("-" * 60)
+
+print("Number of detections:", len(boxes))
+
+for i, (box, logit, phrase) in enumerate(
+    zip(boxes, logits, phrases)
+):
+    print(
+        f"[{i}] "
+        f"confidence={float(logit):.4f}, "
+        f"label={phrase}, "
+        f"box={box.tolist()}"
     )
 
-    sequence = dataset.get_sequences()[0]
-    frames = sequence.get_frames()
-    frame_path = frames[0]
 
-    print(f"Testing frame: {frame_path}")
+# =========================
+# Visualize
+# =========================
+print("\nCreating visualization...")
 
-    image = sequence.read_frame(frame_path)
+annotated_frame = annotate(
+    image_source=image_source,
+    boxes=boxes,
+    logits=logits,
+    phrases=phrases,
+)
 
-    detections = dino.detect(image, prompt=dino_config["prompt"])
+os.makedirs(
+    os.path.dirname(OUTPUT_PATH),
+    exist_ok=True,
+)
 
-    print(f"Detected {len(detections)} persons.")
+cv2.imwrite(
+    OUTPUT_PATH,
+    annotated_frame,
+)
 
-    image_height, image_width = image.shape[:2]
+print("\nSaved result:")
+print(OUTPUT_PATH)
 
-    converted = []
-    for d in detections:
-        cx, cy, w, h = d["box"]
-        x1 = (cx - w / 2) * image_width
-        y1 = (cy - h / 2) * image_height
-        x2 = (cx + w / 2) * image_width
-        y2 = (cy + h / 2) * image_height
-        converted.append({"box": [x1, y1, x2, y2], "score": d["score"], "label": d["label"]})
-
-    output = draw_detections(image, converted)
-    output_bgr = cv2.cvtColor(output, cv2.COLOR_RGB2BGR)
-
-    output_path = "outputs/dino_test.jpg"
-    cv2.imwrite(output_path, output_bgr)
-
-    print(f"Saved: {output_path}")
-
-
-if __name__ == "__main__":
-    main()
+print("=" * 60)
+print("TEST FINISHED")
+print("=" * 60)
