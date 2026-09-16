@@ -1,0 +1,53 @@
+project:
+  name: "Person-Detection-Tracking-Qwen3VL-GroundingDINO-SAM31"
+  version: "0.1.0"
+
+device:
+  type: "cuda"
+  gpu_id: 0
+
+dataset:
+  mot17:
+    root: "/projects/_hdd/EE6008cca9/datasets/MOT17"
+    split: "train"
+
+  mot20:
+    root: "/projects/_hdd/EE6008cca9/datasets/MOT20"
+    split: "train"
+
+  # Max number of frames to process per sequence.
+  # -1 = process all frames
+  max_frames: 100
+
+models:
+
+  qwen3_vl:
+    enabled: true
+    model_name: "Qwen/Qwen3-VL-8B-Instruct"
+    max_new_tokens: 128
+
+  grounding_dino:
+    enabled: true
+    config: "third_party/GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py"
+    checkpoint: "weights/groundingdino_swint_ogc.pth"
+    box_threshold: 0.35
+    text_threshold: 0.25
+    prompt: "person."
+
+  sam31:
+    enabled: true
+    checkpoint: "weights/sam3.1.pt"
+    prompt: "person"
+
+tracking:
+  enabled: true
+  iou_threshold: 0.3
+  max_age: 30
+  min_hits: 1
+
+output:
+  root: "outputs"
+  save_visualization: true
+  save_masks: false
+  save_detections: true
+  save_tracking: true

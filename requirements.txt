@@ -1,0 +1,35 @@
+# Core
+numpy
+opencv-python
+pyyaml
+tqdm
+pillow
+matplotlib
+
+# Qwen3-VL (via Hugging Face Transformers)
+transformers>=4.57.0
+accelerate
+safetensors
+
+# Testing
+pytest
+
+# --- NOT pip-installable, install separately ---
+#
+# Grounding DINO (requires a matching CUDA/PyTorch build):
+#   git clone https://github.com/IDEA-Research/GroundingDINO.git third_party/GroundingDINO
+#   cd third_party/GroundingDINO
+#   pip install -e .
+#   cd ../..
+#
+# SAM 3.1 (NOT the old `segment-anything` package — this is the 2026
+# facebookresearch/sam3 repo; check its README for the current required
+# Python/PyTorch/CUDA versions before installing):
+#   git clone https://github.com/facebookresearch/sam3.git third_party/sam3
+#   cd third_party/sam3
+#   pip install -e .
+#   cd ../..
+#
+# PyTorch itself: install the build matching your CUDA version from
+# https://pytorch.org/get-started/locally/ BEFORE the two repos above,
+# since they build native extensions against it.

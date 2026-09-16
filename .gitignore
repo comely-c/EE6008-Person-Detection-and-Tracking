@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# Dataset
+MOT17/
+MOT20/
+*.zip
+
+# Model weights
+weights/*
+!weights/.gitkeep
+*.pth
+*.pt
+*.safetensors
+*.bin
+
+# Third-party model repos (cloned separately, not vendored)
+third_party/*
+!third_party/.gitkeep
+
+# HuggingFace cache
+.cache/
+.huggingface/
+
+# Outputs
+outputs/*
+!outputs/.gitkeep
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
