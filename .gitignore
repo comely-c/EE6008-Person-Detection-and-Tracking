@@ -27,8 +27,6 @@ weights/*
 
 # Third-party model repos (cloned separately, not vendored)
 third_party/*
-!third_party/GroundingDINO/
-!third_party/GroundingDINO/**
 !third_party/.gitkeep
 
 # HuggingFace cache
